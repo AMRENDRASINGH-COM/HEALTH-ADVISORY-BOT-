@@ -1,12 +1,20 @@
 import streamlit as st 
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
 load_dotenv() # This will load the environment variables from the .env file
-import langchain
 import pandas as pd
-# Set up the gemini API key in VScode
-genai.configure(api_key= os.getenv("GOOGLE-API-KEY"))
+
+# Try to import google-generativeai with error handling
+try:
+    import google.generativeai as genai
+    # Set up the gemini API key in VScode
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))  # Fixed the env var name (hyphen to underscore)
+except ImportError:
+    st.error("Failed to import google-generativeai. Please ensure it's installed.")
+except Exception as e:
+    st.error(f"Error configuring Gemini: {str(e)}")
+
+
 # Stremlit Page
 st.header("Healthcare :blue[Advisor] ",divider="green")
 input = st.text_input("Hi! I am your medical Expert. Ask me any question about your health")
