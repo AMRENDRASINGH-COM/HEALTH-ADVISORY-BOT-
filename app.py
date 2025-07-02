@@ -1,60 +1,131 @@
 import streamlit as st
 import google.generativeai as genai
-import pandas as pd
 import os
 from dotenv import load_dotenv
-load_dotenv()  # This will load the local environment vars...
+import requests
+import time
 
-# Set up the Gemini API key is VSCode
-genai.configure(api_key = os.getenv("GOOGLE-API-KEY"))
+# --- Bulletproof Configuration ---
+load_dotenv()
+API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
 
-# Streamlit Page
-st.header("👨‍⚕️Healthcare :blue[Advisor]⚕️")
-input = st.text_input("💊Hi! I am you Medical Expert. Ask me Anything")
-submit = st.button("Submit")
+if not API_KEY:
+    st.error("❌ Missing API Key. Add GOOGLE_API_KEY to your .env file")
+    st.stop()
 
-# Create a BMI calculator -sidebar
-st.sidebar.subheader("BMI Calculator")
-weight = st.sidebar.text_input("Weight(in kgs):") # capture info in text
-height = st.sidebar.text_input("height(in cms:)")
+# Try both API endpoints
+ENDPOINTS = [
+    'https://generativelanguage.googleapis.com/v1',
+    'https://generativelanguage.googleapis.com/v1beta'
+]
 
-# BMI = weight/height**2
-height_nums = pd.to_numeric(height)
-weight_nums = pd.to_numeric(weight)
-height_mts = height_nums/100
-bmi = weight_nums/(height_mts)**2
+# Try all possible model names
+MODELS_TO_TRY = [
+    'gemini-1.5-pro-latest',
+    'gemini-1.0-pro-latest',
+    'gemini-pro',
+    'models/gemini-1.5-pro-latest',
+    'models/gemini-1.0-pro-latest',
+    'models/gemini-pro'
+]
 
-# BMI Scale
-notes = f'''The BMI value can be interpreted as:
-* Underweight: BMI<18.5
-* Normal Weight: BMI 18.5-24.9
-* Overweight: BMI 25-29.9
-* Obese: BMI>=30'''
+# --- Connection Test ---
+def test_connection():
+    for endpoint in ENDPOINTS:
+        try:
+            response = requests.get(
+                f"{endpoint}/models",
+                headers={"x-goog-api-key": API_KEY},
+                timeout=10
+            )
+            if response.status_code == 200:
+                return endpoint
+        except:
+            continue
+    return None
 
-if bmi:
-    st.sidebar.markdown("The BMI is: ")
-    st.sidebar.write(bmi)
-    st.sidebar.write(notes)
+working_endpoint = test_connection()
 
-# Generative AI application
+if not working_endpoint:
+    st.error("🔥 Couldn't connect to any API endpoint. Check:")
+    st.markdown("""
+    - Your internet connection
+    - API key validity
+    - Google Cloud status page
+    """)
+    st.stop()
 
-def get_response(text):
-    model = genai.GenerativeModel("gemini-pro")
-    if text!= "":
-        response = model.generate_content(text)
-        return(response.text) 
-    else:
-        st.write("Please enter prompt!!")
-    
+# --- Model Initialization ---
+genai.configure(
+    api_key=API_KEY,
+    transport='rest',
+    client_options={'api_endpoint': working_endpoint}
+)
 
-if submit:
-    response = get_response(input)
-    st.subheader("The orange[Response] is: ")
-    st.write(response)               
+model = None
+for model_name in MODELS_TO_TRY:
+    try:
+        model = genai.GenerativeModel(model_name)
+        # Test the model
+        test_response = model.generate_content("Test", request_options={"timeout": 5})
+        if test_response.text:
+            break
+    except:
+        continue
+
+if not model:
+    st.error("💥 No working model found. Available models:")
+    try:
+        st.write([m.name for m in genai.list_models()])
+    except:
+        st.write("Couldn't retrieve model list")
+    st.stop()
+
+# --- Streamlit UI ---
+st.header("👨‍⚕️ Healthcare Advisor")
+input_text = st.text_input("💊 Ask your health question")
+submit = st.button("Get Answer")
+
+# BMI Calculator
+with st.sidebar:
+    st.subheader("BMI Calculator")
+    try:
+        weight = float(st.text_input("Weight (kg)"))
+        height = float(st.text_input("Height (cm)"))
+        
+        if weight and height:
+            bmi = weight / ((height/100) ** 2)
+            st.write(f"BMI: {bmi:.1f}")
+            
+            if bmi < 18.5:
+                st.warning("Underweight")
+            elif 18.5 <= bmi < 25:
+                st.success("Normal weight")
+            elif 25 <= bmi < 30:
+                st.warning("Overweight")
+            else:
+                st.error("Obese")
+    except:
+        st.warning("Enter valid numbers")
+
+# Response Generation
+if submit and input_text:
+    try:
+        with st.spinner("Generating response..."):
+            response = model.generate_content(
+                input_text,
+                generation_config={"temperature": 0.7},
+                request_options={"timeout": 10}
+            )
+            st.subheader("Response:")
+            st.write(response.text)
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
+        st.button("Try Again")
 
 # Disclaimer
-st.subheader("Disclaimer: ", divider=True)
-notes = f'''
-1. This is an advisor which is providing guidance and should not be construced as Medical Advice
-2. Before taking any action, it is recommended to consult a Doctor.'''
-st.markdown(notes)
+st.divider()
+st.markdown("""
+⚠️ **Disclaimer:**  
+This is not medical advice. Always consult a doctor.
+""")
