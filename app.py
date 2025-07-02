@@ -6,39 +6,45 @@ import requests
 import time
 from datetime import datetime
 
-# --- Environment Setup with Error Handling ---
+# --- Environment Setup with Enhanced Error Handling ---
 try:
     load_dotenv('.env')
     API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
     if not API_KEY:
-        st.error("API key not found. Please check your .env file")
+        st.error("🔑 API key not found. Please check your .env file")
+        st.markdown("""
+        <div style="background-color: #fff3e0; padding: 15px; border-radius: 10px; border-left: 5px solid #ffa000;">
+            <p>Ensure your <code>.env</code> file contains:</p>
+            <code>GOOGLE_API_KEY=your_actual_api_key_here</code>
+        </div>
+        """, unsafe_allow_html=True)
         st.stop()
 except Exception as e:
     st.error(f"Configuration error: {str(e)}")
     st.stop()
 
-# --- Bulletproof Model Initialization ---
+# --- Robust API Initialization ---
 def initialize_generative_model():
-    """Robust initialization with multiple fallback strategies"""
+    """Comprehensive initialization with multiple fallback strategies"""
     endpoints = [
         ('v1', 'https://generativelanguage.googleapis.com/v1'),
         ('v1beta', 'https://generativelanguage.googleapis.com/v1beta')
     ]
     
     model_priority = [
-        'models/gemini-1.5-pro-latest',  # Most recent stable
-        'models/gemini-1.5-pro',
+        'models/gemini-1.5-pro-latest',
         'models/gemini-1.0-pro-latest',
-        'models/gemini-pro'              # Legacy
+        'models/gemini-pro',
+        'gemini-pro'  # Legacy format
     ]
     
     for version, endpoint in endpoints:
         try:
-            # First test the endpoint directly
+            # First verify endpoint accessibility
             response = requests.get(
                 f"{endpoint}/models",
                 headers={"x-goog-api-key": API_KEY},
-                timeout=15
+                timeout=10
             )
             
             if response.status_code == 200:
@@ -52,7 +58,7 @@ def initialize_generative_model():
                     for model_name in model_priority:
                         try:
                             model = genai.GenerativeModel(model_name)
-                            # Test with a simple prompt
+                            # Verify with test prompt
                             test_response = model.generate_content(
                                 "Connection test",
                                 request_options={"timeout": 10}
@@ -61,21 +67,15 @@ def initialize_generative_model():
                                 return model, model_name, version
                         except Exception:
                             continue
-                except Exception:
+                except Exception as e:
                     continue
         except requests.exceptions.RequestException:
             continue
     
     # If all attempts fail
-    try:
-        available_models = [m.name for m in genai.list_models()]
-        st.error(f"Available models: {available_models}")
-    except:
-        st.error("Could not retrieve available models")
-    
-    raise ConnectionError("Failed to initialize any model. See troubleshooting steps.")
+    raise ConnectionError("Could not establish connection with any API endpoint or model")
 
-# --- Initialize Model ---
+# --- Initialize Model with Comprehensive Error Reporting ---
 if 'genai_model' not in st.session_state:
     try:
         model, model_name, api_version = initialize_generative_model()
@@ -83,16 +83,16 @@ if 'genai_model' not in st.session_state:
         st.session_state.model_name = model_name
         st.session_state.api_version = api_version
     except Exception as e:
-        st.error(f"Initialization failed: {str(e)}")
+        st.error(f"🚨 Initialization failed: {str(e)}")
         st.markdown("""
         <div style="background-color: #ffebee; padding: 15px; border-radius: 10px; border-left: 5px solid #f44336;">
-            <h4>🚨 Troubleshooting Guide:</h4>
+            <h4>🔧 Troubleshooting Steps:</h4>
             <ol>
-                <li>Verify your <code>GOOGLE_API_KEY</code> is correct</li>
-                <li>Check API status at <a href="https://status.cloud.google.com/" target="_blank">Google Cloud Status</a></li>
-                <li>Ensure billing is enabled in <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                <li>Make sure "Generative Language API" is enabled</li>
-                <li>Try again in 5 minutes (temporary issues may resolve)</li>
+                <li>Verify your <strong>API key is valid</strong> at <a href="https://makersuite.google.com/app/apikey" target="_blank">Google MakerSuite</a></li>
+                <li>Check <strong>API status</strong> at <a href="https://status.cloud.google.com/" target="_blank">Google Cloud Status</a></li>
+                <li>Ensure <strong>billing is enabled</strong> in <a href="https://console.cloud.google.com/billing" target="_blank">Google Cloud Console</a></li>
+                <li>Confirm <strong>Generative Language API is enabled</strong> in <a href="https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com" target="_blank">Google Cloud Console</a></li>
+                <li>Try again in 5-10 minutes (temporary issues may resolve)</li>
             </ol>
         </div>
         """, unsafe_allow_html=True)
@@ -227,65 +227,36 @@ with st.container():
 if submit and input_prompt:
     try:
         with st.spinner("🧞 Dr. Genie is analyzing your question..."):
-            start_time = time.time()
-            
             response = st.session_state.genai_model.generate_content(
-                f"""As a professional health expert, provide detailed advice for:
-                {input_prompt}
-                
-                Include:
-                - Practical recommendations
-                - Scientific rationale
-                - Safety considerations
-                - When to consult a doctor""",
+                f"Act as a professional dietitian and health expert. {input_prompt}",
                 generation_config={
                     "temperature": 0.7,
                     "max_output_tokens": 2000
                 },
                 safety_settings={
-                    'HARM_CATEGORY_HARASSMENT': 'BLOCK_NONE',
-                    'HARM_CATEGORY_HATE_SPEECH': 'BLOCK_NONE',
-                    'HARM_CATEGORY_SEXUALLY_EXPLICIT': 'BLOCK_NONE',
-                    'HARM_CATEGORY_DANGEROUS_CONTENT': 'BLOCK_NONE',
-                    'HARM_CATEGORY_MEDICAL': 'BLOCK_NONE'
+                    'HARM_CATEGORY_MEDICAL': 'BLOCK_NONE',
+                    'HARM_CATEGORY_DANGEROUS': 'BLOCK_NONE'
                 },
-                stream=False,
-                request_options={"timeout": 20}
+                request_options={"timeout": 15}
             )
-            
-            processing_time = time.time() - start_time
             
             if response.text:
                 st.markdown("---")
-                st.subheader("🧪 **Dr. Genie's Expert Advice**", divider="rainbow")
+                st.subheader("🧪 Dr. Genie's Advice:", divider="rainbow")
                 st.markdown(f"""
-                <div class="response-box">
+                <div style="background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #4b8bbe;">
                     {response.text}
                     <p style="text-align: right; color: #6c757d; font-size: 0.8rem;">
-                        Generated in {processing_time:.2f}s using {st.session_state.model_name}
+                        Powered by {st.session_state.model_name}
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.error("Received empty response from the AI model")
-                
     except Exception as e:
-        st.error(f"🚨 Failed to generate response: {str(e)}")
-        st.markdown("""
-        <div class="error-box">
-            <p>Possible solutions:</p>
-            <ul>
-                <li>Try rephrasing your question</li>
-                <li>Check your internet connection</li>
-                <li>Wait a moment and try again</li>
-                <li>Refresh the page (F5)</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.error(f"Failed to generate response: {str(e)}")
+        st.info("Please try again or rephrase your question")
         
-elif submit:
-    st.warning("⚠️ Please enter your health question first")
-
 # --- Disclaimer ---
 st.markdown("---")
 with st.expander("📝 Important Medical Disclaimer"):
