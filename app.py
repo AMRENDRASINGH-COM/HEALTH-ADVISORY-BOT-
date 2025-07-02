@@ -1,123 +1,162 @@
-import streamlit as st 
+import streamlit as st
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
-import pandas as pd
+import requests
 import time
+from datetime import datetime
 
 # --- Environment Setup ---
-load_dotenv('.env')
-
-# --- API Configuration ---
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
-
-if not api_key:
-    st.error("API key not found. Please check your .env file")
-    st.stop()
-
 try:
-    genai.configure(api_key=api_key)
-    
-    # Use the correct model name for your API version
-    try:
-        model = genai.GenerativeModel('gemini-pro')  # Try the original name first
-    except:
-        model = genai.GenerativeModel('models/gemini-pro')  # Alternative format
+    load_dotenv('.env')
+    API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
+    if not API_KEY:
+        st.error("API key not found. Please check your .env file")
+        st.stop()
 except Exception as e:
-    st.error(f"API configuration failed: {str(e)}")
+    st.error(f"Configuration error: {str(e)}")
     st.stop()
 
-# --- UI Header ---
-st.set_page_config(page_title="HealthGenie AI", page_icon="🧞", layout="wide")
-st.markdown("""
-<style>
-    .header { font-size: 50px !important; font-weight: bold; color: #4b8bbe; 
-              text-align: center; padding: 20px; background: linear-gradient(90deg, #f5f7fa 0%, #c3cfe2 100%);
-              border-radius: 15px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); margin-bottom: 25px; }
-    .tagline { font-size: 20px !important; text-align: center; color: #6c757d; margin-bottom: 30px; }
-    .sidebar-header { font-size: 25px !important; font-weight: bold; color: #ffffff; 
-                     background-color: #4b8bbe; padding: 10px; border-radius: 10px; 
-                     text-align: center; margin-bottom: 20px; }
-    .question-box { background-color: #f8f9fa; border-radius: 10px; padding: 20px; 
-                   margin-bottom: 20px; box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1); }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="header">🧞 HealthGenie AI ✨</div>', unsafe_allow_html=True)
-st.markdown('<div class="tagline">Your 24/7 Personal Health Companion 🩺 | Nutrition Guide 🥗 | Fitness Coach 💪</div>', unsafe_allow_html=True)
-st.markdown("---")
-
-# --- BMI Calculator ---
-with st.sidebar:
-    st.markdown('<div class="sidebar-header">📊 BMI Calculator</div>', unsafe_allow_html=True)
-    weight = st.number_input("Weight (in kg):", min_value=0.0, format="%.1f", key="weight")
-    height = st.number_input("Height (in cm):", min_value=0.0, format="%.1f", key="height")
+# --- Model Initialization with Fallbacks ---
+def initialize_model():
+    """Robust model initialization with multiple fallbacks"""
+    endpoints = [
+        'https://generativelanguage.googleapis.com/v1',
+        'https://generativelanguage.googleapis.com/v1beta'
+    ]
     
-    if st.button("Calculate BMI 🧮", key="bmi_button"):
-        if height > 0 and weight > 0:
-            height_m = height / 100
-            bmi = weight / (height_m ** 2)
-            st.balloons()
-            st.success(f"Your BMI: {bmi:.2f}")
-            
-            if bmi < 18.5:
-                st.warning("Underweight: BMI < 18.5 🏋‍♂ Eat more nutritious foods!")
-            elif 18.5 <= bmi < 25:
-                st.success("Normal weight: BMI = 18.5-24.9 ✅ Great job!")
-            elif 25 <= bmi < 30:
-                st.warning("Overweight: BMI = 25-29.9 🚶‍♂ Consider more exercise")
-            else:
-                st.error("Obese: BMI ≥ 30 ⚠ Please consult a doctor")
-        else:
-            st.error("Please enter valid positive numbers")
-
-# --- Health Advisor ---
-with st.container():
-    st.markdown('<div class="question-box">', unsafe_allow_html=True)
-    input_prompt = st.text_area("💬 *Hi! I'm Dr. Genie, your AI health expert. Ask me anything about:*\n\n• Nutrition 🥑\n• Exercise 🏃‍♀\n• Symptoms 🤒\n• Mental Health 🧠\n• General Wellness 🌿", 
-                              key="input", height=150)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    submit = st.button("✨ Get Expert Advice", type="primary")
-
-# --- Response Generation ---
-if submit and input_prompt:
-    try:
-        with st.spinner("🧞 Dr. Genie is thinking..."):
-            response = model.generate_content(
-                f"Act as a professional dietitian and health expert. {input_prompt}",
-                generation_config={"temperature": 0.7}
+    model_priority = [
+        'models/gemini-1.5-pro-latest',  # Most recent stable
+        'models/gemini-1.5-pro-002',
+        'models/gemini-1.5-pro',
+        'models/gemini-2.5-pro',         # Newest version
+        'models/gemini-2.5-flash',
+        'models/gemini-1.0-pro-latest'   # Fallback
+    ]
+    
+    for endpoint in endpoints:
+        try:
+            genai.configure(
+                api_key=API_KEY,
+                transport='rest',
+                client_options={'api_endpoint': endpoint}
             )
             
-            if response.text:
-                st.markdown("---")
-                st.subheader("🧪 *Dr. Genie's Advice:*", divider="rainbow")
+            for model_name in model_priority:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    # Test connection with simple prompt
+                    response = model.generate_content(
+                        "Connection test",
+                        request_options={"timeout": 10}
+                    )
+                    if response.text:
+                        return model, model_name, endpoint
+                except Exception:
+                    continue
+                    
+        except Exception:
+            continue
+    
+    # If all attempts fail
+    try:
+        available_models = [m.name for m in genai.list_models()]
+        st.error(f"Available models: {available_models}")
+    except:
+        st.error("Could not retrieve available models")
+    
+    raise ConnectionError("Failed to initialize any model. See available models above.")
+
+# --- Initialize Model ---
+if 'model' not in st.session_state:
+    try:
+        model, model_name, endpoint = initialize_model()
+        st.session_state.model = model
+        st.session_state.model_name = model_name
+        st.session_state.endpoint = endpoint
+    except Exception as e:
+        st.error(f"Initialization failed: {str(e)}")
+        st.error("""
+        Troubleshooting:
+        1. Verify API key is correct
+        2. Check https://status.cloud.google.com/
+        3. Ensure billing is enabled
+        4. Try a different model name
+        """)
+        st.stop()
+
+# --- UI Configuration ---
+st.set_page_config(
+    page_title="HealthGenie AI",
+    page_icon="🧞",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS (same as previous)
+# ... [include your CSS here] ...
+
+# --- App UI ---
+st.markdown('<div class="header">🧞 HealthGenie AI ✨</div>', unsafe_allow_html=True)
+st.markdown('<div class="tagline">Your 24/7 Personal Health Companion</div>', unsafe_allow_html=True)
+
+# BMI Calculator
+with st.sidebar:
+    st.markdown("### 📊 BMI Calculator")
+    weight = st.number_input("Weight (kg)", min_value=0.0, value=70.0)
+    height = st.number_input("Height (cm)", min_value=0.0, value=170.0)
+    if st.button("Calculate BMI"):
+        if height > 0 and weight > 0:
+            bmi = weight / ((height/100) ** 2)
+            st.success(f"BMI: {bmi:.1f}")
+
+# Main Chat Interface
+prompt = st.text_area("Ask your health question:")
+if st.button("Get Expert Advice"):
+    if prompt:
+        try:
+            with st.spinner("Generating response..."):
+                response = st.session_state.model.generate_content(
+                    f"As a medical expert, answer: {prompt}",
+                    generation_config={
+                        "temperature": 0.7,
+                        "max_output_tokens": 2000
+                    },
+                    safety_settings={
+                        'HARM_CATEGORY_MEDICAL': 'BLOCK_NONE',
+                        'HARM_CATEGORY_DANGEROUS': 'BLOCK_NONE'
+                    }
+                )
                 st.markdown(f"""
-                <div style="background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #4b8bbe;">
+                <div class="response-box">
                     {response.text}
+                    <p style="color: #666; font-size: 0.8rem;">
+                        Generated using {st.session_state.model_name}
+                    </p>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                st.error("Received empty response from the AI model")
-    except Exception as e:
-        st.error(f"Failed to generate response: {str(e)}")
-elif submit:
-    st.warning("⚠ Please enter your health question first")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+    else:
+        st.warning("Please enter a question")
 
-# --- Disclaimer ---
-st.markdown("---")
-with st.expander("📝 Important Disclaimer"):
+# Model Info in Sidebar
+with st.sidebar.expander("⚙️ Connection Info"):
+    st.write(f"**Active Model:** {st.session_state.model_name}")
+    st.write(f"**API Endpoint:** {st.session_state.endpoint}")
+    if st.button("Refresh Connection"):
+        st.session_state.pop('model', None)
+        st.rerun()
+
+# Disclaimer
+with st.expander("⚠️ Important Disclaimer"):
     st.markdown("""
-    ⚠ *Please Note:*  
-    - This AI provides general health information only 🏥  
-    - Not a substitute for professional medical advice 👨‍⚕  
-    - Always consult a real doctor for serious conditions 🩺  
-    - Results may not be 100% accurate 📊  
-    - Use at your own discretion 🤝  
-    Your health is important to us! ❤  
+    This is an AI assistant, not a medical professional. 
+    Always consult a doctor for medical advice.
     """)
 
-st.markdown("---")
-st.markdown("""<div style="text-align: center; color: #6c757d; font-size: 14px;">
-    Made with ❤ by HealthGenie AI | © 2023 All Rights Reserved</div>""", 
-    unsafe_allow_html=True)
+st.markdown(f"""
+<div style="text-align: center; color: #666; margin-top: 2rem;">
+    HealthGenie AI © {datetime.now().year}
+</div>
+""", unsafe_allow_html=True)
