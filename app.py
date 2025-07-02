@@ -34,7 +34,7 @@ notes = f'''The BMI value can be interpreted as:
 if bmi:
     st.sidebar.markdown("The BMI is: ")
     st.sidebar.write(bmi)
-    st.sidebat.write(notes)
+    st.sidebar.write(notes)
 
 # Generative AI application
 
