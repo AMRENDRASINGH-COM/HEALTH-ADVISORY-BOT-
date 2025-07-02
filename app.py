@@ -8,14 +8,7 @@ import langchain
 import pandas as pd
 
 # --- API Configuration ---
-api_key = st.secrets["api"]["google_api_key"]
-
-if not api_key:
-    st.error("API key not found. Please check your secrets.toml file")
-    st.stop()
-
-try:
-    genai.configure(api_key=api_key)
+genai.configure(api_key= os.getenv("GOOGLE-API-KEY"))
     
     # List of supported models with generateContent
     model_names = [
