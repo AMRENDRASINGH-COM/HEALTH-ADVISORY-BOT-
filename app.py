@@ -1,6 +1,12 @@
 import streamlit as st 
 import google.generativeai as genai
 
+import os
+from dotenv import load_dotenv
+load_dotenv() # This will load the environment variables from the .env file
+import langchain
+import pandas as pd
+
 # --- API Configuration ---
 api_key = st.secrets["api"]["google_api_key"]
 
