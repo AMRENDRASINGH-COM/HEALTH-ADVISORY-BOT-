@@ -18,11 +18,20 @@ if not api_key:
 try:
     genai.configure(api_key=api_key)
     
-    # Use the correct model name for your API version
-    try:
-        model = genai.GenerativeModel('gemini-pro')  # Try the original name first
-    except:
-        model = genai.GenerativeModel('models/gemini-pro')  # Alternative format
+    # Try different model names to handle API version compatibility
+    model_names = ['gemini-pro', 'models/gemini-pro', 'gemini-1.0-pro']
+    model = None
+    for name in model_names:
+        try:
+            model = genai.GenerativeModel(name)
+            break
+        except Exception:
+            continue
+    
+    if model is None:
+        st.error("No compatible model found. Please check your API key or available models.")
+        st.stop()
+
 except Exception as e:
     st.error(f"API configuration failed: {str(e)}")
     st.stop()
@@ -116,8 +125,3 @@ with st.expander("📝 Important Disclaimer"):
     - Use at your own discretion 🤝  
     Your health is important to us! ❤  
     """)
-
-st.markdown("---")
-st.markdown("""<div style="text-align: center; color: #6c757d; font-size: 14px;">
-    Made with ❤ by HealthGenie AI | © 2023 All Rights Reserved</div>""", 
-    unsafe_allow_html=True)
