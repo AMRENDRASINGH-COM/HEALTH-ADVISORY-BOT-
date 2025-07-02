@@ -1,38 +1,28 @@
 import streamlit as st 
-import google.generativeai as genai
-
 import os
+import google.generativeai as genai
 from dotenv import load_dotenv
-load_dotenv() # This will load the environment variables from the .env file
-import langchain
 import pandas as pd
+import time
+
+# --- Environment Setup ---
+load_dotenv('.env')
 
 # --- API Configuration ---
-genai.configure(api_key= os.getenv("GOOGLE-API-KEY"))
-    
-    # List of supported models with generateContent
-    model_names = [
-        'models/gemini-1.5-pro-latest',
-        'models/gemini-1.5-pro-002',
-        'models/gemini-1.5-pro',
-        'models/gemini-1.5-flash-latest',
-        'models/gemini-1.5-flash-002',
-        'models/gemini-2.5-pro'
-    ]
-    model = None
-    for name in model_names:
-        try:
-            model = genai.GenerativeModel(name)
-            st.write(f"Successfully loaded model: {name}")  # Debug message
-            break
-        except Exception as e:
-            st.write(f"Model {name} failed: {str(e)}")  # Debug message
-            continue
-    
-    if model is None:
-        st.error("No compatible model found. Please check your API key or available models.")
-        st.stop()
+api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
 
+if not api_key:
+    st.error("API key not found. Please check your .env file")
+    st.stop()
+
+try:
+    genai.configure(api_key=api_key)
+    
+    # Use the correct model name for your API version
+    try:
+        model = genai.GenerativeModel('gemini-pro')  # Try the original name first
+    except:
+        model = genai.GenerativeModel('models/gemini-pro')  # Alternative format
 except Exception as e:
     st.error(f"API configuration failed: {str(e)}")
     st.stop()
@@ -126,3 +116,8 @@ with st.expander("📝 Important Disclaimer"):
     - Use at your own discretion 🤝  
     Your health is important to us! ❤  
     """)
+
+st.markdown("---")
+st.markdown("""<div style="text-align: center; color: #6c757d; font-size: 14px;">
+    Made with ❤ by HealthGenie AI | © 2023 All Rights Reserved</div>""", 
+    unsafe_allow_html=True)
