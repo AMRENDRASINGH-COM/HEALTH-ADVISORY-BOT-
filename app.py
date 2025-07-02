@@ -1,31 +1,33 @@
 import streamlit as st 
-import os
 import google.generativeai as genai
-from dotenv import load_dotenv
-import pandas as pd
-import time
-
-# --- Environment Setup ---
-load_dotenv('.env')
 
 # --- API Configuration ---
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
+api_key = st.secrets["api"]["google_api_key"]
 
 if not api_key:
-    st.error("API key not found. Please check your .env file")
+    st.error("API key not found. Please check your secrets.toml file")
     st.stop()
 
 try:
     genai.configure(api_key=api_key)
     
-    # Try different model names to handle API version compatibility
-    model_names = ['gemini-pro', 'models/gemini-pro', 'gemini-1.0-pro']
+    # List of supported models with generateContent
+    model_names = [
+        'models/gemini-1.5-pro-latest',
+        'models/gemini-1.5-pro-002',
+        'models/gemini-1.5-pro',
+        'models/gemini-1.5-flash-latest',
+        'models/gemini-1.5-flash-002',
+        'models/gemini-2.5-pro'
+    ]
     model = None
     for name in model_names:
         try:
             model = genai.GenerativeModel(name)
+            st.write(f"Successfully loaded model: {name}")  # Debug message
             break
-        except Exception:
+        except Exception as e:
+            st.write(f"Model {name} failed: {str(e)}")  # Debug message
             continue
     
     if model is None:
