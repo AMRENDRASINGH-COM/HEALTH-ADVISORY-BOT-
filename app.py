@@ -5,23 +5,24 @@ import pandas as pd
 import time
 
 # --- Environment Setup ---
-load_dotenv('.env')  # This is optional locally; Streamlit Cloud uses secrets
+load_dotenv('.env')  # Optional for local testing; Streamlit Cloud uses secrets
 
 # --- API Configuration ---
-api_key = st.secrets.get("GOOGLE-API-KEY")  # Use Streamlit secrets instead of os.getenv
+api_key = st.secrets.get("GOOGLE-API-KEY")  # Use Streamlit secrets
 if not api_key:
     st.error("API key not found. Please check your Streamlit secrets")
     st.stop()
 
 try:
     genai.configure(api_key=api_key)
-    # List available models to find a supported one
+    # List available models and select a supported one
     models = genai.list_models()
     available_models = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
     if not available_models:
-        st.error("No models support generateContent. Check API setup.")
+        st.error("No models support generateContent. Check API setup or available models.")
         st.stop()
-    model_name = available_models[0]  # Use the first available model
+    model_name = available_models[0]  # Use the first available model (e.g., gemini-1.5-flash)
+    st.write(f"Using model: {model_name}")  # Debug: Show which model is selected
     model = genai.GenerativeModel(model_name)
 except Exception as e:
     st.error(f"API configuration failed: {str(e)}")
@@ -101,8 +102,8 @@ if submit and input_prompt:
                 st.error("Received empty response from the AI model")
     except Exception as e:
         st.error(f"Failed to generate response: {str(e)}")
-elif submit:
-    st.warning("⚠ Please enter your health question first")
+    elif submit:
+        st.warning("⚠ Please enter your health question first")
 
 # --- Disclaimer ---
 st.markdown("---")
