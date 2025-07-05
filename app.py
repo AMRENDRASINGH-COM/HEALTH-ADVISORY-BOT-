@@ -5,28 +5,26 @@ import pandas as pd
 import time
 
 # --- Environment Setup ---
-load_dotenv('.env')  # Optional for local testing; Streamlit Cloud uses secrets
+load_dotenv('.env')  # For local testing; Streamlit Cloud uses secrets
 
 # --- API Configuration ---
-api_key = st.secrets.get("GOOGLE-API-KEY")  # Use Streamlit secrets
+api_key = st.secrets.get("GOOGLE-API-KEY")
 if not api_key:
     st.error("API key not found. Please check your Streamlit secrets")
     st.stop()
 
 try:
     genai.configure(api_key=api_key)
-    # List available models and select a supported one
     models = genai.list_models()
     available_models = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
     if not available_models:
-        st.error("No models support generateContent. Check API setup or available models.")
+        st.error("No models available for generateContent. Verify API setup.")
         st.stop()
-    # Prefer gemini-1.5-flash, fallback to first available model
     model_name = 'gemini-1.5-flash' if 'gemini-1.5-flash' in available_models else available_models[0]
-    st.write(f"Using model: {model_name}")  # Debug: Show which model is selected
+    st.write(f"Selected model: {model_name}")
     model = genai.GenerativeModel(model_name)
 except Exception as e:
-    st.error(f"API configuration failed: {str(e)}")
+    st.error(f"API setup error: {str(e)}")
     st.stop()
 
 # --- UI Header ---
@@ -61,7 +59,6 @@ with st.sidebar:
             bmi = weight / (height_m ** 2)
             st.balloons()
             st.success(f"Your BMI: {bmi:.2f}")
-            
             if bmi < 18.5:
                 st.warning("Underweight: BMI < 18.5 🏋‍♂ Eat more nutritious foods!")
             elif 18.5 <= bmi < 25:
@@ -91,7 +88,6 @@ if submit:
                     f"Act as a professional dietitian and health expert. {input_prompt}",
                     generation_config={"temperature": 0.7}
                 )
-                
                 if response.text:
                     st.markdown("---")
                     st.subheader("🧪 *Dr. Genie's Advice:*", divider="rainbow")
@@ -101,9 +97,9 @@ if submit:
                     </div>
                     """, unsafe_allow_html=True)
                 else:
-                    st.error("Received empty response from the AI model")
+                    st.error("No response from the model.")
         except Exception as e:
-            st.error(f"Failed to generate response: {str(e)}")
+            st.error(f"Response failed: {str(e)}")
     else:
         st.warning("⚠ Please enter your health question first")
 
