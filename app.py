@@ -15,14 +15,7 @@ if not api_key:
 
 try:
     genai.configure(api_key=api_key)
-    models = genai.list_models()
-    available_models = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
-    if not available_models:
-        st.error("No models available for generateContent. Verify API setup.")
-        st.stop()
-    model_name = 'gemini-1.5-flash' if 'gemini-1.5-flash' in available_models else available_models[0]
-    st.write(f"Selected model: {model_name}")
-    model = genai.GenerativeModel(model_name)
+    model = genai.GenerativeModel('gemini-1.5-flash')  # Explicitly use supported model
 except Exception as e:
     st.error(f"API setup error: {str(e)}")
     st.stop()
