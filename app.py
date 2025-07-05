@@ -82,27 +82,28 @@ with st.container():
     submit = st.button("✨ Get Expert Advice", type="primary")
 
 # --- Response Generation ---
-if submit and input_prompt:
-    try:
-        with st.spinner("🧞 Dr. Genie is thinking..."):
-            response = model.generate_content(
-                f"Act as a professional dietitian and health expert. {input_prompt}",
-                generation_config={"temperature": 0.7}
-            )
-            
-            if response.text:
-                st.markdown("---")
-                st.subheader("🧪 *Dr. Genie's Advice:*", divider="rainbow")
-                st.markdown(f"""
-                <div style="background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #4b8bbe;">
-                    {response.text}
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.error("Received empty response from the AI model")
-    except Exception as e:
-        st.error(f"Failed to generate response: {str(e)}")
-    elif submit:
+if submit:
+    if input_prompt:
+        try:
+            with st.spinner("🧞 Dr. Genie is thinking..."):
+                response = model.generate_content(
+                    f"Act as a professional dietitian and health expert. {input_prompt}",
+                    generation_config={"temperature": 0.7}
+                )
+                
+                if response.text:
+                    st.markdown("---")
+                    st.subheader("🧪 *Dr. Genie's Advice:*", divider="rainbow")
+                    st.markdown(f"""
+                    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #4b8bbe;">
+                        {response.text}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error("Received empty response from the AI model")
+        except Exception as e:
+            st.error(f"Failed to generate response: {str(e)}")
+    else:
         st.warning("⚠ Please enter your health question first")
 
 # --- Disclaimer ---
