@@ -15,8 +15,16 @@ if not api_key:
 
 try:
     genai.configure(api_key=api_key)
-    # Explicitly try using gemini-pro
-    model = genai.GenerativeModel('gemini-pro')
+    # List available models and select a supported one
+    models = genai.list_models()
+    available_models = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
+    if not available_models:
+        st.error("No models support generateContent. Check API setup or available models.")
+        st.stop()
+    # Prefer gemini-1.5-flash, fallback to first available model
+    model_name = 'gemini-1.5-flash' if 'gemini-1.5-flash' in available_models else available_models[0]
+    st.write(f"Using model: {model_name}")  # Debug: Show which model is selected
+    model = genai.GenerativeModel(model_name)
 except Exception as e:
     st.error(f"API configuration failed: {str(e)}")
     st.stop()
