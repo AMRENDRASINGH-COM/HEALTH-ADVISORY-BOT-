@@ -33,6 +33,12 @@ st.markdown("""
                      text-align: center; margin-bottom: 20px; }
     .question-box { background-color: #f8f9fa; border-radius: 10px; padding: 20px; 
                    margin-bottom: 20px; box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1); }
+    .advice-box { background-color: #fff3e6; padding: 20px; border-radius: 15px; 
+                 border-left: 6px solid #ff7043; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+                 font-size: 16px; line-height: 1.6; color: #333; }
+    .advice-title { color: #ff7043; font-size: 24px; font-weight: bold; margin-bottom: 10px; 
+                   text-align: center; text-transform: uppercase; }
+    .divider-rainbow { border: none; border-top: 4px dashed #ff7043; margin: 20px 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -83,12 +89,9 @@ if submit:
                 )
                 if response.text:
                     st.markdown("---")
-                    st.subheader("🧪 *Dr. Genie's Advice:*", divider="rainbow")
-                    st.markdown(f"""
-                    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 5px solid #4b8bbe;">
-                        {response.text}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown('<div class="divider-rainbow"></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="advice-title">Dr. Genie\'s Advice</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="advice-box">{response.text}</div>', unsafe_allow_html=True)
                 else:
                     st.error("No response from the model.")
         except Exception as e:
