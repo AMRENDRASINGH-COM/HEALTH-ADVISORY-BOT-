@@ -1,28 +1,28 @@
-import streamlit as st 
-import os
+import streamlit as st
 import google.generativeai as genai
 from dotenv import load_dotenv
 import pandas as pd
 import time
 
 # --- Environment Setup ---
-load_dotenv('.env')
+load_dotenv('.env')  # This is optional locally; Streamlit Cloud uses secrets
 
 # --- API Configuration ---
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE-API-KEY")
-
+api_key = st.secrets.get("google_api_key")  # Use Streamlit secrets instead of os.getenv
 if not api_key:
-    st.error("API key not found. Please check your .env file")
+    st.error("API key not found. Please check your Streamlit secrets")
     st.stop()
 
 try:
     genai.configure(api_key=api_key)
-    
-    # Use the correct model name for your API version
-    try:
-        model = genai.GenerativeModel('gemini-pro')  # Try the original name first
-    except:
-        model = genai.GenerativeModel('models/gemini-pro')  # Alternative format
+    # List available models to find a supported one
+    models = genai.list_models()
+    available_models = [model.name for model in models if 'generateContent' in model.supported_generation_methods]
+    if not available_models:
+        st.error("No models support generateContent. Check API setup.")
+        st.stop()
+    model_name = available_models[0]  # Use the first available model
+    model = genai.GenerativeModel(model_name)
 except Exception as e:
     st.error(f"API configuration failed: {str(e)}")
     st.stop()
