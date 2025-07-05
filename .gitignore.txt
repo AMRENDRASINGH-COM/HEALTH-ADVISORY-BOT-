@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 build/
-develop-eggs/
 dist/
 downloads/
 eggs/
@@ -25,6 +24,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Streamlit-specific
+.streamlit/secrets.toml
+.streamlit/cache/
+
 # Environments
 .env
 .venv
@@ -34,10 +37,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Streamlit specific
-.streamlit/secrets.toml
-.streamlit/cache/
-
 # Temporary files and logs
 *.log
 *.bak
@@ -46,6 +45,28 @@ venv.bak/
 .idea/
 .spyderproject
 .ropeproject
+.vscode/
 
-# Ignore macOS system files (if applicable)
+# macOS system files
 .DS_Store
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+cover/
+
+# Jupyter Notebook (if applicable)
+.ipynb_checkpoints
+
+# mypy type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyPI configuration file
+.pypirc
