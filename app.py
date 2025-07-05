@@ -40,7 +40,6 @@ st.markdown("""
     .advice-title { color: #ff7043; font-size: 24px; font-weight: bold; margin-bottom: 10px; 
                    text-align: center; text-transform: uppercase; }
     .divider-rainbow { border: none; border-top: 4px dashed #ff7043; margin: 20px 0; }
-    /* Adjust text_area styling */
     .stTextArea textarea { margin-top: 0 !important; padding: 10px; }
     .stTextArea { margin-top: 0 !important; }
 </style>
@@ -49,6 +48,10 @@ st.markdown("""
 st.markdown('<div class="header">🩺 HealthGenie AI ✨</div>', unsafe_allow_html=True)
 st.markdown('<div class="tagline">Your 24/7 Personal Health Companion 🩺 | Nutrition Guide 🥗 | Fitness Coach 💪</div>', unsafe_allow_html=True)
 st.markdown("---")
+
+# --- Session State for BMI ---
+if 'bmi' not in st.session_state:
+    st.session_state.bmi = None
 
 # --- BMI Calculator ---
 with st.sidebar:
@@ -60,6 +63,7 @@ with st.sidebar:
         if height > 0 and weight > 0:
             height_m = height / 100
             bmi = weight / (height_m ** 2)
+            st.session_state.bmi = bmi
             st.balloons()
             st.success(f"Your BMI: {bmi:.2f}")
             if bmi < 18.5:
@@ -84,8 +88,11 @@ if submit:
     if input_prompt:
         try:
             with st.spinner("🧞 Dr. Genie is thinking..."):
+                # Include BMI in the prompt if available
+                bmi_context = f"Your BMI is {st.session_state.bmi:.2f}." if st.session_state.bmi else "No BMI data available. Please calculate your BMI first."
+                full_prompt = f"Act as a professional dietitian and health expert. {bmi_context} {input_prompt}"
                 response = model.generate_content(
-                    f"Act as a professional dietitian and health expert. {input_prompt}",
+                    full_prompt,
                     generation_config={"temperature": 0.7}
                 )
                 if response.text:
