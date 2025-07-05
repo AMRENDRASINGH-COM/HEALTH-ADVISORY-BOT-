@@ -42,7 +42,7 @@ Check out the live application here: [HealthGenie AI](https://amrendraheathadvis
 5. Open a Pull Request
 
 ## 📧 Contact
-For questions or collaboration, reach out at [amrendras439@gmail].
+For questions or collaboration, reach out at [amrendras439@gmail.com](mailto:amrendras439@gmail.com).
 
 ## ⚠ Disclaimer
 This is a prototype for educational purposes. Consult a healthcare professional for medical advice.
