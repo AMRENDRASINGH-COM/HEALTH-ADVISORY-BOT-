@@ -8,7 +8,7 @@ import time
 load_dotenv('.env')  # This is optional locally; Streamlit Cloud uses secrets
 
 # --- API Configuration ---
-api_key = st.secrets.get("google_api_key")  # Use Streamlit secrets instead of os.getenv
+api_key = st.secrets.get("GOOGLE-API-KEY")  # Use Streamlit secrets instead of os.getenv
 if not api_key:
     st.error("API key not found. Please check your Streamlit secrets")
     st.stop()
