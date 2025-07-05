@@ -21,7 +21,7 @@ except Exception as e:
     st.stop()
 
 # --- UI Header ---
-st.set_page_config(page_title="HealthGenie AI", page_icon="🧞", layout="wide")
+st.set_page_config(page_title="HealthGenie AI", page_icon="🩺", layout="wide")
 st.markdown("""
 <style>
     .header { font-size: 50px !important; font-weight: bold; color: #4b8bbe; 
@@ -31,18 +31,22 @@ st.markdown("""
     .sidebar-header { font-size: 25px !important; font-weight: bold; color: #ffffff; 
                      background-color: #4b8bbe; padding: 10px; border-radius: 10px; 
                      text-align: center; margin-bottom: 20px; }
-    .question-box { background-color: #f8f9fa; border-radius: 10px; padding: 20px; 
-                   margin-bottom: 20px; box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1); }
+    .input-header { font-size: 22px; font-weight: bold; color: #2c6e49; 
+                   text-align: center; padding: 10px; background-color: #e8f5e9; 
+                   border-radius: 10px; margin-bottom: 10px; }
     .advice-box { background-color: #fff3e6; padding: 20px; border-radius: 15px; 
                  border-left: 6px solid #ff7043; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
                  font-size: 16px; line-height: 1.6; color: #333; }
     .advice-title { color: #ff7043; font-size: 24px; font-weight: bold; margin-bottom: 10px; 
                    text-align: center; text-transform: uppercase; }
     .divider-rainbow { border: none; border-top: 4px dashed #ff7043; margin: 20px 0; }
+    /* Adjust text_area styling */
+    .stTextArea textarea { margin-top: 0 !important; padding: 10px; }
+    .stTextArea { margin-top: 0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header">🧞 HealthGenie AI ✨</div>', unsafe_allow_html=True)
+st.markdown('<div class="header">🩺 HealthGenie AI ✨</div>', unsafe_allow_html=True)
 st.markdown('<div class="tagline">Your 24/7 Personal Health Companion 🩺 | Nutrition Guide 🥗 | Fitness Coach 💪</div>', unsafe_allow_html=True)
 st.markdown("---")
 
@@ -71,11 +75,8 @@ with st.sidebar:
 
 # --- Health Advisor ---
 with st.container():
-    st.markdown('<div class="question-box">', unsafe_allow_html=True)
-    input_prompt = st.text_area("💬 *Hi! I'm Dr. Genie, your AI health expert. Ask me anything about:*\n\n• Nutrition 🥑\n• Exercise 🏃‍♀\n• Symptoms 🤒\n• Mental Health 🧠\n• General Wellness 🌿", 
-                              key="input", height=150)
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    st.markdown('<div class="input-header">🌿 Ask Dr. Genie Your Health Questions</div>', unsafe_allow_html=True)
+    input_prompt = st.text_area("", key="input", height=150, placeholder="💬 Ask about Nutrition, Exercise, Symptoms, Mental Health, or Wellness...")
     submit = st.button("✨ Get Expert Advice", type="primary")
 
 # --- Response Generation ---
